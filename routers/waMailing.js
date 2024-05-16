@@ -6,6 +6,7 @@ import xlsx from 'xlsx';
 import multer from "multer";
 import Mail from "../models/Mail.js";
 import schedule from "node-schedule";
+import { promises as fs } from 'fs';
 
 const waMailing = express();
 waMailing.use(bodyParser.urlencoded({extended: false}));
@@ -13,6 +14,41 @@ waMailing.use(bodyParser.json());
 
 const storage = multer.memoryStorage();
 const upload = multer({storage: storage});
+
+waMailing.get('/get_qr', async (req, res) => {
+  try {
+    // Check if tokens directory exists
+    const tokensDirExists = await fs.access('./tokens').then(() => true).catch(() => false);
+
+    // If tokens directory exists, delete it
+    if (tokensDirExists) {
+      await fs.rmdir('./tokens', { recursive: true });
+      console.log('Tokens directory deleted');
+    }
+
+    // Create WPPConnect session
+    wppconnect.create({
+      session: 'sessionName',
+      catchQR: (qrCode, asciiQR) => {
+        // Send the raw QR code data to the client
+        res.send({ qrCode });
+      },
+      statusFind: (statusSession, session) => {
+        console.log('Status:', statusSession);
+        // You can handle different session statuses here if needed
+      }
+    }).then(client => {
+      // You can use the client instance for further operations
+      console.log('Client is ready!');
+    }).catch(error => {
+      console.error('Error during session creation:', error);
+      res.status(500).send('Error generating QR code');
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error generating QR code');
+  }
+});
 
 waMailing.get('/get_all', auth, async (req, res) => {
   try {
@@ -107,9 +143,6 @@ waMailing.post('/send_to_all', auth, upload.single('excel_file'), async (req, re
       catchQR: true,
       browserSessionToken: true,
     });
-
-
-    console.log('Hello world!');
 
     // Connect to WhatsApp
     await client.start();
