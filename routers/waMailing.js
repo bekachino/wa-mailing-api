@@ -1,6 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser"
 import wppconnect from '@wppconnect-team/wppconnect';
+import auth from "../middleware/auth.js";
 import xlsx from 'xlsx';
 import multer from "multer";
 import Mail from "../models/Mail.js";
@@ -13,7 +14,7 @@ waMailing.use(bodyParser.json());
 const storage = multer.memoryStorage();
 const upload = multer({storage: storage});
 
-waMailing.get('/get_all', async (req, res) => {
+waMailing.get('/get_all', auth, async (req, res) => {
   try {
     const mails = await Mail.find();
     return res.json(mails);
@@ -23,7 +24,7 @@ waMailing.get('/get_all', async (req, res) => {
   }
 });
 
-waMailing.post('/send_to_all', upload.single('excel_file'), async (req, res) => {
+waMailing.post('/send_to_all', auth, upload.single('excel_file'), async (req, res) => {
   try {
     const { message, scheduleDate } = req.body;
     const shouldSchedule = scheduleDate && !isNaN(Date.parse(scheduleDate));
@@ -33,9 +34,7 @@ waMailing.post('/send_to_all', upload.single('excel_file'), async (req, res) => 
 
       console.log(scheduleDate);
       schedule.scheduleJob(scheduledDate, async () => {
-        console.log(scheduleDate);
         await sendWhatsAppMessage(message, req.file.buffer);
-        console.log(scheduleDate);
       });
 
       return res.status(200).json({ success: true, message: 'Message scheduled successfully' });
@@ -51,7 +50,7 @@ waMailing.post('/send_to_all', upload.single('excel_file'), async (req, res) => 
   }
 });
 
-  waMailing.post('/send_to_one', async (req, res) => {
+  waMailing.post('/send_to_one', auth, async (req, res) => {
     try {
       const {phone_number, message} = req.body;
 
@@ -94,13 +93,13 @@ waMailing.post('/send_to_all', upload.single('excel_file'), async (req, res) => 
     const workbook = xlsx.read(fileBuffer, {type: 'buffer'});
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    // const jsonData = xlsx.utils.sheet_to_json(sheet);
-    const jsonData = [{
-      'Абонент': 'Бектур',
-      'Лицевой счет': 1122334455,
-      'Баланс': '-1234.56',
-      'Мобильный телефон': '996 707 777 404'
-    }];
+    const jsonData = xlsx.utils.sheet_to_json(sheet);
+    // const jsonData = [{
+    //   'Абонент': 'Бектур',
+    //   'Лицевой счет': 1122334455,
+    //   'Баланс': '-1234.56',
+    //   'Мобильный телефон': '996 707 777 404'
+    // }];
 
     // Create WPPConnect client
     const client = await wppconnect.create({
@@ -108,6 +107,9 @@ waMailing.post('/send_to_all', upload.single('excel_file'), async (req, res) => 
       catchQR: true,
       browserSessionToken: true,
     });
+
+
+    console.log('Hello world!');
 
     // Connect to WhatsApp
     await client.start();
@@ -119,7 +121,7 @@ waMailing.post('/send_to_all', upload.single('excel_file'), async (req, res) => 
         .replace('$баланс', data['Баланс'] || '?');
       const waMessage = await client.sendText(data['Мобильный телефон'].toString().replace(/\s/g, ''), customizedMessage);
       const mail = new Mail({
-        text: message,
+        text: customizedMessage,
         phone_number: data['Мобильный телефон'].toString().replace(/\s/g, ''),
         sent_at: new Date(),
         deliver_status: !!waMessage?.id,
