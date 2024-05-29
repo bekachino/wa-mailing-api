@@ -14,9 +14,10 @@ const mailSchema = new mongoose.Schema({
     required: true,
   },
   deliver_status: {
-    type: String,
+    type: Boolean,
     required: true,
   },
+  reason: String,
 });
 
 const Mail = mongoose.model("Mail", mailSchema);

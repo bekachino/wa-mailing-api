@@ -57,6 +57,21 @@ waMailing.post('/send_to_one', async (req, res) => {
   }
 });
 
+waMailing.post('/send_to_all', async (req, res) => {
+  try {
+    const {abons, message, scheduleDate} = req.body || {};
+    
+    if (!abons || !message) return res.status(400).send({message: 'Заполните все поля!'});
+    if (!clientIsReady) return res.status(400).send({message: 'Идёт подключение к Whatsapp...'});
+    
+    void sendToAll(abons, message, scheduleDate);
+    return res.send({message: 'Отправка сообщений...'});
+  } catch (e) {
+    console.log(e);
+    res.send(e);
+  }
+});
+
 const client = new Client({
   authStrategy: new LocalAuth(),
   webVersionCache: {
@@ -135,28 +150,41 @@ export const sendToAll = async (abons, message, scheduleDate) => {
 const sendMessages = async (abons, message) => {
   for (const abon of abons) {
     let customMessage = message;
+    const phone_number = abon[Object.keys(abon)[0]].toString().replace(/\D/g, '').slice(-9);
     Object.keys(abon).forEach(key => {
       customMessage = customMessage.replace(`@${key}`, abon[key]);
     });
-    await client.sendMessage('996' + `${abon[Object.keys(abon)[0]].replace(/\D/g, '')}`.slice(-9) + '@c.us', customMessage)
-    .then(() => {
-      const mail = new Mail({
-        phone_number: abon[Object.keys(abon)[0]].replace(/\D/g, ''),
-        text: customMessage,
-        sent_at: new Date().toISOString(),
-        deliver_status: true,
+    if (phoneNumFormatFits(phone_number)) {
+      client.sendMessage(`996${phone_number}@c.us`, customMessage)
+      .then(() => {
+        const mail = new Mail({
+          phone_number,
+          text: customMessage,
+          sent_at: new Date().toISOString(),
+          deliver_status: true,
+        });
+        mail.save();
+      })
+      .catch(() => {
+        const mail = new Mail({
+          phone_number,
+          text: customMessage,
+          sent_at: new Date().toISOString(),
+          deliver_status: false,
+          reason: 'Ошибка сервера',
+        });
+        mail.save();
       });
-      mail.save();
-    })
-    .catch(() => {
+    } else {
       const mail = new Mail({
-        phone_number: abon[Object.keys(abon)[0]].replace(/\D/g, ''),
+        phone_number,
         text: customMessage,
         sent_at: new Date().toISOString(),
         deliver_status: false,
+        reason: 'Неверный формат номера телефона',
       });
       mail.save();
-    });
+    }
   }
 };
 
