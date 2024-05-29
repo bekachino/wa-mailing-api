@@ -5,15 +5,57 @@ import schedule from "node-schedule";
 import Mail from "../models/Mail.js";
 import qrcode from 'qrcode';
 import pkg from 'whatsapp-web.js';
-import { sendClientReadyStatus } from '../index.js';
-import { sendQr } from '../index.js';
-import { clientConnected } from '../index.js';
-
-const {Client, LocalAuth} = pkg;
 
 const waMailing = express();
 waMailing.use(bodyParser.urlencoded({extended: false}));
 waMailing.use(bodyParser.json());
+
+const prefixes = [
+  '70', '50', '77', '55', '312', '99', '22'
+];
+
+const phoneNumFormatFits = (phoneNumber) => {
+  const slicedPhoneNum = phoneNumber.toString().replace(/\D/g, '').slice(-9);
+  return prefixes.some(prefix => slicedPhoneNum.toString().replace(/\D/g, '').startsWith(prefix)) && slicedPhoneNum.length === 9;
+};
+
+const {Client, LocalAuth} = pkg;
+let clientIsReady = false;
+let qrImgSrc = '';
+
+waMailing.get('/get_all', auth, async (req, res) => {
+  try {
+    const mails = await Mail.find();
+    return res.json(mails);
+  } catch (e) {
+    res.status(e.status || 500).send(e);
+  }
+});
+
+waMailing.get('/get_qr', async (req, res) => {
+  try {
+    res.send({hasQr: !!qrImgSrc, qrImgSrc, clientIsReady});
+  } catch (e) {
+    console.log(e);
+    res.send(e);
+  }
+});
+
+waMailing.post('/send_to_one', async (req, res) => {
+  try {
+    const {phone_number, message} = req.body;
+    
+    if (!phone_number || !message) return res.status(400).send({message: 'Заполните все поля!'});
+    if (!clientIsReady) return res.status(400).send({message: 'Идёт подключение к Whatsapp...'});
+    if (!phoneNumFormatFits(phone_number)) return res.status(400).send({message: 'Неверный формат номера телефона'});
+    
+    const newMail = await sendToOne(phone_number.toString().replace(/\D/g, '').slice(-9), message);
+    return res.status(newMail ? 200 : 400).send({message: newMail ? 'Сообщение отправлено' : 'Сообщение не отправлено'})
+  } catch (e) {
+    console.log(e);
+    res.send(e);
+  }
+});
 
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -27,33 +69,35 @@ const client = new Client({
 client.on('qr', (qr) => {
   console.log('QR сгенерирован', qr);
   qrcode.toDataURL(qr, (err, url) => {
-    sendQr(url);
+    qrImgSrc = url;
     if (err) {
-      console.error('Error generating QR code', err);
+      return console.error('Error generating QR code', err);
     }
   });
 });
 
 client.on('ready', () => {
   console.log('Client is ready!');
-  sendClientReadyStatus(true);
+  clientIsReady = true;
+  qrImgSrc = '';
 });
 
 client.on('authenticated', () => {
-  clientConnected();
   console.log('Client authenticated!');
+  qrImgSrc = '';
 });
 
 client.on('disconnected', () => {
   client.initialize();
   console.log('Client disconnected!');
+  clientIsReady = false;
 });
 
 client.initialize();
 
 export const sendToOne = async (phone_number, message) => {
   let status = false;
-  await client.sendMessage('996' + `${phone_number}`.slice(-9) + '@c.us', message)
+  await client.sendMessage(`996${phone_number}@c.us`, message)
   .then(() => {
     const mail = new Mail({
       text: message,
@@ -94,10 +138,10 @@ const sendMessages = async (abons, message) => {
     Object.keys(abon).forEach(key => {
       customMessage = customMessage.replace(`@${key}`, abon[key]);
     });
-    await client.sendMessage('996' + `${abon[Object.keys(abon)[0]]}`.slice(-9) + '@c.us', customMessage)
+    await client.sendMessage('996' + `${abon[Object.keys(abon)[0]].replace(/\D/g, '')}`.slice(-9) + '@c.us', customMessage)
     .then(() => {
       const mail = new Mail({
-        phone_number: abon[Object.keys(abon)[0]],
+        phone_number: abon[Object.keys(abon)[0]].replace(/\D/g, ''),
         text: customMessage,
         sent_at: new Date().toISOString(),
         deliver_status: true,
@@ -106,7 +150,7 @@ const sendMessages = async (abons, message) => {
     })
     .catch(() => {
       const mail = new Mail({
-        phone_number: abon[Object.keys(abon)[0]],
+        phone_number: abon[Object.keys(abon)[0]].replace(/\D/g, ''),
         text: customMessage,
         sent_at: new Date().toISOString(),
         deliver_status: false,
@@ -115,14 +159,5 @@ const sendMessages = async (abons, message) => {
     });
   }
 };
-
-waMailing.get('/get_all', auth, async (req, res) => {
-  try {
-    const mails = await Mail.find();
-    return res.json(mails);
-  } catch (e) {
-    res.status(e.status || 500).send({...e});
-  }
-});
 
 export default waMailing;
