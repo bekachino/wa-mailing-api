@@ -2,7 +2,7 @@
 FROM node:14
 
 # Create and change to the app directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8000
 
 # Define the command to run the app
-CMD ["node", "app.js"]
+CMD ["npm", "run", "dev"]
