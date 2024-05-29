@@ -1,13 +1,35 @@
-# Use the official Node.js image from the Docker Hub
+# Use the official Node.js image as a base image
 FROM node:17
 
-# Create and change to the app directory
+# Install necessary dependencies for Puppeteer
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    libnss3 \
+    libxss1 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libxrandr2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libgbm1 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libappindicator3-1 \
+    libcurl3-gnutls \
+    xdg-utils
+
+# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if available)
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install the app dependencies
+# Install dependencies
 RUN npm install
 
 # Copy the rest of the application code
