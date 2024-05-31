@@ -20,9 +20,7 @@ app.use("/user", users);
 
 const run = async () => {
   void mongoose.connect(config.db);
-  
   app.listen(port, () => console.log(port));
-  
   process.on("exit", () => {
     mongoose.disconnect();
   });

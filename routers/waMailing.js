@@ -14,14 +14,14 @@ const prefixes = [
   '70', '50', '77', '55', '312', '99', '22'
 ];
 
+const {Client, LocalAuth} = pkg;
+let clientIsReady = false;
+let qrImgSrc = '';
+
 const phoneNumFormatFits = (phoneNumber) => {
   const slicedPhoneNum = phoneNumber.toString().replace(/\D/g, '').slice(-9);
   return prefixes.some(prefix => slicedPhoneNum.toString().replace(/\D/g, '').startsWith(prefix)) && slicedPhoneNum.length === 9;
 };
-
-const {Client, LocalAuth} = pkg;
-let clientIsReady = false;
-let qrImgSrc = '';
 
 waMailing.get('/get_all', auth, async (req, res) => {
   try {
@@ -129,6 +129,7 @@ export const sendToOne = async (phone_number, message) => {
       text: message,
       sent_at: new Date().toISOString(),
       deliver_status: false,
+      reason: 'Ошибка сервера',
     });
     mail.save();
     status = false;
