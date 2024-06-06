@@ -17,7 +17,7 @@ const prefixes = [
 
 const {Client, LocalAuth} = pkg;
 await puppeteer.launch({
-  executablePath: '/snap/bin/chromium',
+  executablePath: '/usr/bin/chromium-browser',
 });
 let clientIsReady = false;
 let qrImgSrc = '';
@@ -79,7 +79,7 @@ waMailing.post('/send_to_all', async (req, res) => {
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    executablePath: '/snap/bin/chromium',
+    executablePath: '/usr/bin/chromium-browser',
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   },
   webVersionCache: {
