@@ -23,7 +23,7 @@ const phoneNumFormatFits = (phoneNumber) => {
   return prefixes.some(prefix => slicedPhoneNum.toString().replace(/\D/g, '').startsWith(prefix)) && slicedPhoneNum.length === 9;
 };
 
-waMailing.get('/get_all', auth, async (req, res) => {
+waMailing.get('/get_all', async (req, res) => {
   try {
     const mails = await Mail.find();
     return res.json(mails);
