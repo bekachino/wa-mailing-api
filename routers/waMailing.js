@@ -16,9 +16,6 @@ const prefixes = [
 ];
 
 const {Client, LocalAuth} = pkg;
-await puppeteer.launch({
-  executablePath: '/usr/bin/chromium-browser',
-});
 let clientIsReady = false;
 let qrImgSrc = '';
 
