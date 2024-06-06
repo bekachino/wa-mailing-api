@@ -16,10 +16,6 @@ const prefixes = [
 ];
 
 const {Client, LocalAuth} = pkg;
-await puppeteer.launch({
-  args: ['--no-sandbox'],
-  timeout: 10000,
-});
 let clientIsReady = false;
 let qrImgSrc = '';
 
@@ -79,7 +75,10 @@ waMailing.post('/send_to_all', async (req, res) => {
 
 const client = new Client({
   authStrategy: new LocalAuth(),
-  browserArgs: ['--no-sandbox', '--disable-setuid-sandbox'],
+  puppeteer: {
+    executablePath: '/snap/bin/chromium',
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  },
   webVersionCache: {
     type: "remote",
     remotePath:
