@@ -140,7 +140,7 @@ export const sendToOne = async (phone_number, message) => {
 
 const sendToAll = async (abons, message) => {
   const interval = 10000;
-  const batchSize = 1;
+  const batchSize = 20;
   let currentIndex = 0;
   
   const sendBatch = async (startIndex, endIndex) => {
