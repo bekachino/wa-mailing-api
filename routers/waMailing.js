@@ -5,6 +5,7 @@ import schedule from "node-schedule";
 import Mail from "../models/Mail.js";
 import qrcode from 'qrcode';
 import pkg from 'whatsapp-web.js';
+import puppeteer from 'puppeteer';
 
 const waMailing = express();
 waMailing.use(bodyParser.urlencoded({extended: false}));
@@ -15,6 +16,10 @@ const prefixes = [
 ];
 
 const {Client, LocalAuth} = pkg;
+await puppeteer.launch({
+  executablePath: '/usr/bin/chromium',
+  args: ['--no-sandbox', '--disable-setuid-sandbox']
+});
 let clientIsReady = false;
 let qrImgSrc = '';
 
