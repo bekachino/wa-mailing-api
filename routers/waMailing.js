@@ -5,7 +5,6 @@ import schedule from "node-schedule";
 import Mail from "../models/Mail.js";
 import qrcode from 'qrcode';
 import pkg from 'whatsapp-web.js';
-import puppeteer from "puppeteer";
 
 const waMailing = express();
 waMailing.use(bodyParser.urlencoded({extended: false}));
@@ -73,12 +72,9 @@ waMailing.post('/send_to_all', async (req, res) => {
   }
 });
 
-await puppeteer.launch({
-  args: ['--no-sandbox', '--disable-setuid-sandbox'],
-});
-
 const client = new Client({
   authStrategy: new LocalAuth(),
+  browserArgs: ['--no-sandbox'],
   webVersionCache: {
     type: "remote",
     remotePath:
