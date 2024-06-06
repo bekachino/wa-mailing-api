@@ -138,36 +138,42 @@ export const sendToOne = async (phone_number, message) => {
   return status;
 };
 
-export const sendToAll = async (abons, message, scheduleDate) => {
-  if (scheduleDate) {
-    schedule.scheduleJob(scheduleDate, () => {
-      void sendMessages(abons, message, scheduleDate);
-    });
-    console.log(`Message scheduled to be sent at ${scheduleDate}`);
-  } else {
-    void sendMessages(abons, message);
-  }
-};
-
-const sendMessages = async (abons, message) => {
-  for (const abon of abons) {
-    let customMessage = message;
-    const phone_number = abon[Object.keys(abon)[0]].toString().replace(/\D/g, '').slice(-9);
-    Object.keys(abon).forEach(key => {
-      customMessage = customMessage.replace(`@${key}`, abon[key]);
-    });
-    if (phoneNumFormatFits(phone_number)) {
-      client.sendMessage(`996${phone_number}@c.us`, customMessage)
-      .then(() => {
+const sendToAll = async (abons, message) => {
+  const interval = 10000;
+  const batchSize = 1;
+  let currentIndex = 0;
+  
+  const sendBatch = async (startIndex, endIndex) => {
+    for (let i = startIndex; i < endIndex; i++) {
+      const abon = abons[i];
+      let customMessage = message;
+      const phone_number = abon[Object.keys(abon)[0]].toString().replace(/\D/g, '').slice(-9);
+      Object.keys(abon).forEach(key => {
+        customMessage = customMessage.replace(`@${key}`, abon[key]);
+      });
+      
+      if (!phoneNumFormatFits(phone_number)) {
+        const mail = new Mail({
+          phone_number,
+          text: customMessage,
+          sent_at: new Date().toISOString(),
+          deliver_status: false,
+          reason: 'Неверный формат номера телефона',
+        });
+        await mail.save();
+        continue;
+      }
+      
+      try {
+        await client.sendMessage(`996${phone_number}@c.us`, customMessage);
         const mail = new Mail({
           phone_number,
           text: customMessage,
           sent_at: new Date().toISOString(),
           deliver_status: true,
         });
-        mail.save();
-      })
-      .catch(() => {
+        await mail.save();
+      } catch (error) {
         const mail = new Mail({
           phone_number,
           text: customMessage,
@@ -175,19 +181,27 @@ const sendMessages = async (abons, message) => {
           deliver_status: false,
           reason: 'Ошибка сервера',
         });
-        mail.save();
-      });
-    } else {
-      const mail = new Mail({
-        phone_number,
-        text: customMessage,
-        sent_at: new Date().toISOString(),
-        deliver_status: false,
-        reason: 'Неверный формат номера телефона',
-      });
-      mail.save();
+        await mail.save();
+      }
     }
-  }
+  };
+  
+  const sendInBatches = async () => {
+    while (currentIndex < abons.length) {
+      const endIndex = Math.min(currentIndex + batchSize, abons.length);
+      
+      await sendBatch(currentIndex, endIndex);
+      
+      currentIndex = endIndex;
+      
+      if (currentIndex < abons.length) {
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+    }
+  };
+  
+  // Start sending messages in batches
+  await sendInBatches();
 };
 
 export default waMailing;
