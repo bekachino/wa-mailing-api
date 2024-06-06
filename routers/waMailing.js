@@ -17,8 +17,8 @@ const prefixes = [
 
 const {Client, LocalAuth} = pkg;
 await puppeteer.launch({
-  executablePath: '/snap/bin/chromium',
-  args: ['--no-sandbox', '--disable-setuid-sandbox']
+  args: ['--no-sandbox'],
+  timeout: 10000,
 });
 let clientIsReady = false;
 let qrImgSrc = '';
