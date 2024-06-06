@@ -74,7 +74,7 @@ waMailing.post('/send_to_all', async (req, res) => {
 
 const client = new Client({
   authStrategy: new LocalAuth(),
-  browserArgs: ['--no-sandbox'],
+  browserArgs: ['--no-sandbox', '--disable-setuid-sandbox'],
   webVersionCache: {
     type: "remote",
     remotePath:
