@@ -104,9 +104,9 @@ client.on('authenticated', () => {
 });
 
 client.on('disconnected', () => {
-  client.initialize();
   console.log('Client disconnected!');
   clientIsReady = false;
+  setTimeout(() => client.initialize(), 5000);
 });
 
 client.initialize();
