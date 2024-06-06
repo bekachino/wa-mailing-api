@@ -2,3 +2,4 @@ node_modules
 .idea
 tokens
 .wwebjs_auth
+.cache
