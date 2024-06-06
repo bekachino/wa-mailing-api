@@ -17,7 +17,7 @@ const prefixes = [
 
 const {Client, LocalAuth} = pkg;
 await puppeteer.launch({
-  executablePath: '/usr/bin/chromium',
+  executablePath: '/snap/bin/chromium',
   args: ['--no-sandbox', '--disable-setuid-sandbox']
 });
 let clientIsReady = false;
