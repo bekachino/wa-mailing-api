@@ -78,10 +78,6 @@ waMailing.post('/send_to_all', async (req, res) => {
 
 const client = new Client({
   authStrategy: new LocalAuth(),
-  puppeteer: {
-    executablePath: '/usr/bin/chromium-browser',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  },
   webVersionCache: {
     type: "remote",
     remotePath:
