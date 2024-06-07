@@ -113,10 +113,15 @@ client.on('authenticated', () => {
 client.on('disconnected', () => {
   console.log('Client disconnected!');
   clientIsReady = false;
-  setTimeout(() => client.initialize(), 5000);
+  setTimeout(() => client.initialize(), 10000);
 });
 
-client.initialize();
+while (!clientIsReady) {
+  setInterval(() => {
+    client.initialize();
+    console.log('Initializing client...');
+  }, 20000);
+}
 
 export const sendToOne = async (phone_number, message) => {
   let status = false;
