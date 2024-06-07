@@ -209,11 +209,11 @@ const sendToAll = async (abons, message, scheduleDate) => {
   
   if (scheduleDate) {
     schedule.scheduleJob(scheduleDate, () => {
-      void sendInBatches(abons, message, scheduleDate);
+      void sendInBatches();
     });
     console.log(`Message scheduled to be sent at ${scheduleDate}`);
   } else {
-    void sendInBatches(abons, message);
+    void sendInBatches();
   }
 };
 
