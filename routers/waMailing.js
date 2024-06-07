@@ -5,7 +5,6 @@ import schedule from "node-schedule";
 import Mail from "../models/Mail.js";
 import qrcode from 'qrcode';
 import pkg from 'whatsapp-web.js';
-import puppeteer from 'puppeteer';
 
 const waMailing = express();
 waMailing.use(bodyParser.urlencoded({extended: false}));
@@ -23,6 +22,14 @@ const phoneNumFormatFits = (phoneNumber) => {
   const slicedPhoneNum = phoneNumber.toString().replace(/\D/g, '').slice(-9);
   return prefixes.some(prefix => slicedPhoneNum.toString().replace(/\D/g, '').startsWith(prefix)) && slicedPhoneNum.length === 9;
 };
+
+waMailing.get('/check_client', auth, async (_, res) => {
+  try {
+    return clientIsReady;
+  } catch (e) {
+    res.status(e.status || 500).send(e);
+  }
+});
 
 waMailing.get('/get_all', auth, async (req, res) => {
   try {
@@ -117,7 +124,7 @@ export const sendToOne = async (phone_number, message) => {
   .then(() => {
     const mail = new Mail({
       text: message,
-      phone_number,
+      phone_number: '+996' + phone_number,
       sent_at: new Date().toISOString(),
       deliver_status: true,
     });
@@ -126,7 +133,7 @@ export const sendToOne = async (phone_number, message) => {
   })
   .catch(() => {
     const mail = new Mail({
-      phone_number,
+      phone_number: '+996' + phone_number,
       text: message,
       sent_at: new Date().toISOString(),
       deliver_status: false,
@@ -138,7 +145,7 @@ export const sendToOne = async (phone_number, message) => {
   return status;
 };
 
-const sendToAll = async (abons, message) => {
+const sendToAll = async (abons, message, scheduleDate) => {
   const interval = 10000;
   const batchSize = 20;
   let currentIndex = 0;
@@ -151,10 +158,10 @@ const sendToAll = async (abons, message) => {
       Object.keys(abon).forEach(key => {
         customMessage = customMessage.replace(`@${key}`, abon[key]);
       });
-      
+
       if (!phoneNumFormatFits(phone_number)) {
         const mail = new Mail({
-          phone_number,
+          phone_number: '+996' + phone_number,
           text: customMessage,
           sent_at: new Date().toISOString(),
           deliver_status: false,
@@ -163,11 +170,11 @@ const sendToAll = async (abons, message) => {
         await mail.save();
         continue;
       }
-      
+
       try {
         await client.sendMessage(`996${phone_number}@c.us`, customMessage);
         const mail = new Mail({
-          phone_number,
+          phone_number: '+996' + phone_number,
           text: customMessage,
           sent_at: new Date().toISOString(),
           deliver_status: true,
@@ -175,7 +182,7 @@ const sendToAll = async (abons, message) => {
         await mail.save();
       } catch (error) {
         const mail = new Mail({
-          phone_number,
+          phone_number: '+996' + phone_number,
           text: customMessage,
           sent_at: new Date().toISOString(),
           deliver_status: false,
@@ -200,8 +207,14 @@ const sendToAll = async (abons, message) => {
     }
   };
   
-  // Start sending messages in batches
-  await sendInBatches();
+  if (scheduleDate) {
+    schedule.scheduleJob(scheduleDate, () => {
+      void sendInBatches(abons, message, scheduleDate);
+    });
+    console.log(`Message scheduled to be sent at ${scheduleDate}`);
+  } else {
+    void sendInBatches(abons, message);
+  }
 };
 
 export default waMailing;
