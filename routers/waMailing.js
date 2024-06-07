@@ -25,7 +25,7 @@ const phoneNumFormatFits = (phoneNumber) => {
 
 waMailing.get('/check_client', auth, async (_, res) => {
   try {
-    return clientIsReady;
+    return res.send(clientIsReady);
   } catch (e) {
     res.status(e.status || 500).send(e);
   }
