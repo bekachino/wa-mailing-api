@@ -116,12 +116,12 @@ client.on('disconnected', () => {
   setTimeout(() => client.initialize(), 10000);
 });
 
-while (!clientIsReady) {
-  setInterval(() => {
+setInterval(() => {
+  if (!clientIsReady) {
     client.initialize();
     console.log('Initializing client...');
-  }, 20000);
-}
+  }
+}, 20000);
 
 export const sendToOne = async (phone_number, message) => {
   let status = false;
@@ -163,7 +163,7 @@ const sendToAll = async (abons, message, scheduleDate) => {
       Object.keys(abon).forEach(key => {
         customMessage = customMessage.replace(`@${key}`, abon[key]);
       });
-
+      
       if (!phoneNumFormatFits(phone_number)) {
         const mail = new Mail({
           phone_number: '+996' + phone_number,
@@ -175,7 +175,7 @@ const sendToAll = async (abons, message, scheduleDate) => {
         await mail.save();
         continue;
       }
-
+      
       try {
         await client.sendMessage(`996${phone_number}@c.us`, customMessage);
         const mail = new Mail({
