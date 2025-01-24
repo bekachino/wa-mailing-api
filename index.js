@@ -91,7 +91,7 @@ const assignTags = async () => {
           });
           data.push({
             ls_abon: abons[i]?.ls_abon,
-            tags: updateAbonTags?.customer?.t_tags
+            tags: updateAbonTags
           });
         }
       }
