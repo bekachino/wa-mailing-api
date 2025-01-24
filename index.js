@@ -92,7 +92,7 @@ const assignTags = async () => {
           
           data.push({
             ls_abon: abons[i]?.ls_abon,
-            tags: updateAbonTags.data
+            tags: updateAbonTags.data?.customer?.t_tags,
           });
         }
       }
