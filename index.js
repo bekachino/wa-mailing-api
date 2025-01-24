@@ -89,7 +89,7 @@ const assignTags = async () => {
               Authorization: `Token token=${token}`
             }
           });
-          console.log(updateAbonTags.data);
+          data.push(updateAbonTags.data);
         }
       }
     }
