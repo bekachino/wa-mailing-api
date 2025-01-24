@@ -7,14 +7,23 @@ import qrcode from 'qrcode';
 import pkg from 'whatsapp-web.js';
 
 const waMailing = express();
-waMailing.use(bodyParser.urlencoded({extended: false}));
+waMailing.use(bodyParser.urlencoded({ extended: false }));
 waMailing.use(bodyParser.json());
 
 const prefixes = [
-  '70', '50', '77', '55', '312', '99', '22'
+  '70',
+  '50',
+  '77',
+  '55',
+  '312',
+  '99',
+  '22'
 ];
 
-const {Client, LocalAuth} = pkg;
+const {
+  Client,
+  LocalAuth
+} = pkg;
 let clientIsReady = false;
 let qrImgSrc = '';
 
@@ -42,7 +51,11 @@ waMailing.get('/get_all', auth, async (req, res) => {
 
 waMailing.get('/get_qr', async (req, res) => {
   try {
-    res.send({hasQr: !!qrImgSrc, qrImgSrc, clientIsReady});
+    res.send({
+      hasQr: !!qrImgSrc,
+      qrImgSrc,
+      clientIsReady
+    });
   } catch (e) {
     console.log(e);
     res.send(e);
@@ -51,14 +64,17 @@ waMailing.get('/get_qr', async (req, res) => {
 
 waMailing.post('/send_to_one', async (req, res) => {
   try {
-    const {phone_number, message} = req.body;
+    const {
+      phone_number,
+      message
+    } = req.body;
     
-    if (!phone_number || !message) return res.status(400).send({message: 'Заполните все поля!'});
-    if (!clientIsReady) return res.status(400).send({message: 'Идёт подключение к Whatsapp...'});
-    if (!phoneNumFormatFits(phone_number)) return res.status(400).send({message: 'Неверный формат номера телефона'});
+    if (!phone_number || !message) return res.status(400).send({ message: 'Заполните все поля!' });
+    if (!clientIsReady) return res.status(400).send({ message: 'Идёт подключение к Whatsapp...' });
+    if (!phoneNumFormatFits(phone_number)) return res.status(400).send({ message: 'Неверный формат номера телефона' });
     
     const newMail = await sendToOne(phone_number.toString().replace(/\D/g, '').slice(-9), message);
-    return res.status(newMail ? 200 : 400).send({message: newMail ? 'Сообщение отправлено' : 'Сообщение не отправлено'})
+    return res.status(newMail ? 200 : 400).send({ message: newMail ? 'Сообщение отправлено' : 'Сообщение не отправлено' })
   } catch (e) {
     console.log(e);
     res.send(e);
@@ -67,13 +83,17 @@ waMailing.post('/send_to_one', async (req, res) => {
 
 waMailing.post('/send_to_all', async (req, res) => {
   try {
-    const {abons, message, scheduleDate} = req.body || {};
+    const {
+      abons,
+      message,
+      scheduleDate
+    } = req.body || {};
     
-    if (!abons || !message) return res.status(400).send({message: 'Заполните все поля!'});
-    if (!clientIsReady) return res.status(400).send({message: 'Идёт подключение к Whatsapp...'});
+    if (!abons || !message) return res.status(400).send({ message: 'Заполните все поля!' });
+    if (!clientIsReady) return res.status(400).send({ message: 'Идёт подключение к Whatsapp...' });
     
     void sendToAll(abons, message, scheduleDate);
-    return res.send({message: 'Отправка сообщений...'});
+    return res.send({ message: 'Отправка сообщений...' });
   } catch (e) {
     console.log(e);
     res.send(e);
