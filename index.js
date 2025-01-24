@@ -89,9 +89,10 @@ const assignTags = async () => {
               Authorization: `Token token=${token}`
             }
           });
+          
           data.push({
             ls_abon: abons[i]?.ls_abon,
-            tags: updateAbonTags
+            tags: updateAbonTags.data
           });
         }
       }
