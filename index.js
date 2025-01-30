@@ -3,16 +3,32 @@ import config from "./config.js";
 import cors from "cors";
 import mongoose from "mongoose";
 import axios from "axios";
+import XLSX from "xlsx";
 
 const app = express();
 const port = 8002;
 const corsOptions = {
   origin: "*",
 };
-const PATH_TO_EXCEL = './public/Абоненты.xlsx';
+const PATH_TO_EXCEL = './public/hydra_abons.xlsx';
 const login = 'asyl';
 const password = '*hjvfirf';
 let token = '';
+
+//const abons = [
+//  {
+//    ls_abon: '175050620',
+//    tag: 'кара-суу'
+//  },
+//  {
+//    ls_abon: '175078915',
+//    tag: 'кара-суу'
+//  },
+//  {
+//    ls_abon: '175078912',
+//    tag: 'кара-суу'
+//  },
+//];
 
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -38,24 +54,11 @@ const authorize = async () => {
 
 const assignTags = async () => {
   try {
-    //const workbook = XLSX.readFile(PATH_TO_EXCEL);
-    //const sheetName = workbook.SheetNames[0];
-    //const abons = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    const abons = [
-      {
-        ls_abon: '175050620',
-        tag: 'кара-суу'
-      },
-      {
-        ls_abon: '175078915',
-        tag: 'кара-суу'
-      },
-      {
-        ls_abon: '175078912',
-        tag: 'кара-суу'
-      },
-    ];
+    const workbook = XLSX.readFile(PATH_TO_EXCEL);
+    const sheetName = workbook.SheetNames[0];
+    const abons = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     const data = [];
+    console.log(abons);
     
     for (let i = 0; i < abons.length; i++) {
       try {
@@ -79,7 +82,7 @@ const assignTags = async () => {
               });
               const tags = [
                 ...reqToTags.data?.customer?.t_tags,
-                abons[i]?.tag
+                abons[i]?.teg
               ];
               
               const updateAbonTags = await axios.put(`https://hydra.snt.kg:8000/rest/v2/subjects/customers/${n_result_id}`, {
@@ -91,6 +94,11 @@ const assignTags = async () => {
                   Authorization: `Token token=${token}`
                 }
               });
+              
+              console.log(`${i}   | |  `, {
+                ls_abon: abons[i]?.ls_abon,
+                tags: updateAbonTags.data?.customer?.t_tags,
+              })
               
               data.push({
                 ls_abon: abons[i]?.ls_abon,
@@ -114,14 +122,12 @@ const assignTags = async () => {
 app.get("/assign_tags", async (req, res) => {
   try {
     if (!token) {
-      token = await authorize()
+      token = await authorize();
     }
     if (!!token) {
       const abonsData = await assignTags();
-      res.json(abonsData);
+      res.json(abonsData.slice(0, 100));
     }
-    //const abons = assignTags();
-    //res.json(abons.slice(0, 100));
   } catch (e) {
     console.log(e);
   }
