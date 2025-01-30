@@ -58,43 +58,51 @@ const assignTags = async () => {
     const data = [];
     
     for (let i = 0; i < abons.length; i++) {
-      const req = await axios(`https://hydra.snt.kg:8000/rest/v2/search?query=${abons[i]?.ls_abon}`, {
-        headers: {
-          Authorization: `Token token=${token}`
-        }
-      });
-      
-      const foundAbon = req.data?.search_results?.find(abon => abon?.vc_section === 'SEARCH_SECTION_Accounts');
-      
-      if (!!foundAbon) {
-        const n_result_id = req.data?.search_results[0]?.n_result_id;
+      try {
+        const req = await axios(`https://hydra.snt.kg:8000/rest/v2/search?query=${abons[i]?.ls_abon}`, {
+          headers: {
+            Authorization: `Token token=${token}`
+          }
+        });
         
-        if (!!n_result_id) {
-          const reqToTags = await axios(`https://hydra.snt.kg:8000/rest/v2/subjects/customers/${n_result_id}`, {
-            headers: {
-              Authorization: `Token token=${token}`
-            }
-          });
-          const tags = [
-            ...reqToTags.data?.customer?.t_tags,
-            abons[i]?.tag
-          ];
+        const foundAbon = req.data?.search_results?.find(abon => abon?.vc_section === 'SEARCH_SECTION_Accounts');
+        
+        if (!!foundAbon) {
+          const n_result_id = req.data?.search_results[0]?.n_result_id;
           
-          const updateAbonTags = await axios.put(`https://hydra.snt.kg:8000/rest/v2/subjects/customers/${n_result_id}`, {
-            customer: {
-              t_tags: tags,
+          if (!!n_result_id) {
+            try {
+              const reqToTags = await axios(`https://hydra.snt.kg:8000/rest/v2/subjects/customers/${n_result_id}`, {
+                headers: {
+                  Authorization: `Token token=${token}`
+                }
+              });
+              const tags = [
+                ...reqToTags.data?.customer?.t_tags,
+                abons[i]?.tag
+              ];
+              
+              const updateAbonTags = await axios.put(`https://hydra.snt.kg:8000/rest/v2/subjects/customers/${n_result_id}`, {
+                customer: {
+                  t_tags: tags,
+                }
+              }, {
+                headers: {
+                  Authorization: `Token token=${token}`
+                }
+              });
+              
+              data.push({
+                ls_abon: abons[i]?.ls_abon,
+                tags: updateAbonTags.data?.customer?.t_tags,
+              });
+            } catch (e) {
+              console.log(e);
             }
-          }, {
-            headers: {
-              Authorization: `Token token=${token}`
-            }
-          });
-          
-          data.push({
-            ls_abon: abons[i]?.ls_abon,
-            tags: updateAbonTags.data?.customer?.t_tags,
-          });
+          }
         }
+      } catch (e) {
+        console.log(e);
       }
     }
     return data;
